@@ -278,6 +278,11 @@ smtp_port = 25
 smtp_password = airflow
 smtp_mail_from = airflow@airflow.com
 
+[slack]
+# If you want airflow to send slack messages on retries or failure, you can
+# set a default slack token here.
+# default_slack_token = ''
+
 [celery]
 # This section only applies if you are using the CeleryExecutor in
 # [core] section above
@@ -406,6 +411,11 @@ smtp_user = airflow
 smtp_port = 25
 smtp_password = airflow
 smtp_mail_from = airflow@airflow.com
+
+[slack]
+# If you want airflow to send slack messages on retries or failure, you can
+# set a default slack token here.
+# default_slack_token = ''
 
 [celery]
 celery_app_name = airflow.executors.celery_executor

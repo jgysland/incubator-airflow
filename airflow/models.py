@@ -61,6 +61,7 @@ from airflow.utils.dates import cron_presets, date_range as utils_date_range
 from airflow.utils.db import provide_session
 from airflow.utils.decorators import apply_defaults
 from airflow.utils.email import send_email
+from airflow.utils.slack import send_slack
 from airflow.utils.helpers import (as_tuple, is_container, is_in, validate_key)
 from airflow.utils.logging import LoggingMixin
 from airflow.utils.state import State
@@ -1298,6 +1299,9 @@ class TaskInstance(Base):
                 logging.info('Marking task as UP_FOR_RETRY')
                 if task.email_on_retry and task.email:
                     self.email_alert(error, is_retry=True)
+                elif task.slack_on_retry and task.slack_username \
+                    and task.slack_channel:
+                    self.slack_alert(error, is_retry=True)
             else:
                 self.state = State.FAILED
                 if task.retries:
@@ -1306,6 +1310,9 @@ class TaskInstance(Base):
                     logging.info('Marking task as FAILED.')
                 if task.email_on_failure and task.email:
                     self.email_alert(error, is_retry=False)
+                elif task.slack_on_failure and task.slack_username \
+                    and task.slack_channel:
+                    self.slack_alert(error, is_retry=False)
         except Exception as e2:
             logging.error(
                 'Failed to send email to: ' + str(task.email))
@@ -1423,6 +1430,22 @@ class TaskInstance(Base):
             "Mark success: <a href='{self.mark_success_url}'>Link</a><br>"
         ).format(**locals())
         send_email(task.email, title, body)
+
+    def slack_alert(self, exception, is_retry=False):
+        task = self.task
+        exception = '```%s```' % str(exception)
+        try_ = task.retries + 1
+        text = (
+            "* Airflow alert*: `{self}`\n"
+            "Try {self.try_number} out of {try_}\n"
+            "Exception:\n{exception}\n"
+            "Log: {self.log_url}\n"
+            "Host: {self.hostname}\n"
+            "Log file: {self.log_filepath}\n"
+            "Mark success: {self.mark_success_url}\n"
+            ).format(**locals())
+        send_slack(task.slack_username, task.slack_channel,
+                   text, task.slack_icon_emoji)
 
     def set_duration(self):
         if self.end_date and self.start_date:
@@ -1685,6 +1708,11 @@ class BaseOperator(object):
             email=None,
             email_on_retry=True,
             email_on_failure=True,
+            slack_username=None,
+            slack_channel=None,
+            slack_icon_emoji=None,
+            slack_on_retry=True,
+            slack_on_failure=True,
             retries=0,
             retry_delay=timedelta(seconds=300),
             start_date=None,
@@ -1725,6 +1753,11 @@ class BaseOperator(object):
         self.email = email
         self.email_on_retry = email_on_retry
         self.email_on_failure = email_on_failure
+        self.slack_username = slack_username
+        self.slack_channel = slack_channel
+        self.slack_icon_emoji = slack_icon_emoji
+        self.slack_on_retry = slack_on_retry
+        self.slack_on_failure = slack_on_failure
         self.start_date = start_date
         if start_date and not isinstance(start_date, datetime):
             logging.warning(
