@@ -1,4 +1,5 @@
 from slackclient import SlackClient
+from airflow import configuration
 
 
 def send_slack(username, channel, text, icon_emoji=None):
