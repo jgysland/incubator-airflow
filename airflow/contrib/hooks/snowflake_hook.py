@@ -39,6 +39,9 @@ class SnowflakeHook(DbApiHook):
         self.account = kwargs.pop("account", None)
         self.warehouse = kwargs.pop("warehouse", None)
         self.database = kwargs.pop("database", None)
+        self.region = kwargs.pop("region", None)
+        self.role = kwargs.pop("role", None)
+        self.schema=kwargs.pop("schema", None)
 
     def _get_conn_params(self):
         """
@@ -53,10 +56,13 @@ class SnowflakeHook(DbApiHook):
         conn_config = {
             "user": conn.login,
             "password": conn.password or '',
-            "schema": conn.schema or '',
+            "schema": self.schema or conn.schema or '',
             "database": self.database or database or '',
             "account": self.account or account or '',
-            "warehouse": self.warehouse or warehouse or ''
+            "warehouse": self.warehouse or warehouse or '',
+            "region": self.region or region or '',
+            "role": self.role or role or ''
+
         }
         return conn_config
 

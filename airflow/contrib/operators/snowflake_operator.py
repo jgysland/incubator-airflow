@@ -51,18 +51,20 @@ class SnowflakeOperator(BaseOperator):
     @apply_defaults
     def __init__(
             self, sql, snowflake_conn_id='snowflake_default', parameters=None,
-            autocommit=True, warehouse=None, database=None, *args, **kwargs):
-        super(SnowflakeOperator, self).__init__(*args, **kwargs)
+            autocommit=True, warehouse=None, database=None, role=None, schema=None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.snowflake_conn_id = snowflake_conn_id
         self.sql = sql
         self.autocommit = autocommit
         self.parameters = parameters
         self.warehouse = warehouse
         self.database = database
+        self.role = role
+        self.schema = schema
 
     def get_hook(self):
         return SnowflakeHook(snowflake_conn_id=self.snowflake_conn_id,
-                             warehouse=self.warehouse, database=self.database)
+                             warehouse=self.warehouse, database=self.database, role=self.role, schema=self.schema)
 
     def execute(self, context):
         self.log.info('Executing: %s', self.sql)
